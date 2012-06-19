@@ -1,0 +1,9 @@
+# ^logs for .*$
+query=`echo -n "$message" | cut -d' ' -f3-`
+matches=`egrep -e "$query" "$IRCLOG" | tail -n5`
+if [ -z "$matches" ]; then
+	reply "$nick" "$channel" "Nothing to be found."
+fi
+echo "$matches" | while read match; do
+	say "$channel" "$match"
+done

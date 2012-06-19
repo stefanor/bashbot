@@ -1,0 +1,4 @@
+# ^[[:cntrl:]]VERSION[[:cntrl:]]
+if [ "$nick" = "$channel" ]; then
+	say "$channel" "Bashbot v 0.3"
+fi

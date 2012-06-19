@@ -1,0 +1,50 @@
+#!/bin/sh
+
+BOTNAME=Cauliflower
+BOTOWNERS=:Vhata:tumbleweed:highvoltage:Outsider:
+BOTHOST=vivaldi.owlsbarn.rivera.za.net
+SERVER=hokage.za.ethereal.web.za
+PORT=6667
+ONLOGIN='join #'
+IRCLOG=/tmp/bashbot.log
+BOTDIR=~/.bashbot
+PIPE=/tmp/bashbot.pipe
+
+touch $IRCLOG
+if [ ! -d "$BOTDIR" ]; then
+	echo "$BOTDIR doesn't exist" >&2
+	exit
+fi
+
+trap "(rm $PIPE; echo quit) > $PIPE" exit
+rm $PIPE
+mkfifo $PIPE
+
+# Watchdog:
+touch /tmp/bashbot.i
+(while [ -e $PIPE ]; do
+	find /tmp -mmin +6 -name bashbot.i -exec kill $$ \; 2> /dev/null
+	sleep 1m
+done) &
+
+while cat $PIPE 2> /dev/null; do true; done | tee /tmp/bashbot.o |
+	( printf "nick $BOTNAME\nuser $BOTNAME $BOTHOST localhost $BOTNAME\nmode $BOTNAME +B\n$ONLOGIN\n" ; cat ) |
+		nc $SERVER $PORT | tee /tmp/bashbot.i |
+	while read f ; do
+		case "$f" in
+			*:QQUIT?)
+				kill $$
+				;;
+			*" PRIVMSG "*)
+				nf=`echo -n "$f" | sed 's/^:\(.*\)!\(.*\)@\(.*\) PRIVMSG \(.*\) :\(.*\)\r$/\1:\4:\5/'`
+				nick=`echo -n "$nf" | cut -d: -f1`
+				channel=`echo -n "$nf" | cut -d: -f2`
+				message=`echo -n "$nf" | cut -d: -f3- | sed -e 's/^ *//' -e 's/ *$//'`
+				. $BOTDIR/functions
+				examine "$nick" "$channel" "$message"
+				;;
+			"PING :"*)
+				echo "$f" | sed 's/I/O/' > $PIPE
+				;;
+		esac
+	done

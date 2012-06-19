@@ -1,0 +1,4 @@
+Set, Edit, and Recall factoids
+bashbot: FACTOID is DATA
+bashbot: DATA
+bashbot: DATA ~= s/foo/bar/

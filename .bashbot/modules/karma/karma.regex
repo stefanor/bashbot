@@ -1,0 +1,15 @@
+# ^.+(\+\+|--)( \[.*\])?$
+karmee=`echo -n "$message" | tr '-' '+' | cut -d+ -f1 | cut -d' ' -f1`
+updown=`echo -n "$message" | sed 's/.*\(++\|--\)\( \[.*\]\)*/\1/'`
+
+if ! grep -q -e "^$karmee:" "$BOTDIR/karma"; then
+	karma=0
+	echo $[karma$updown] > /dev/null
+	echo "$karmee:$karma" >> "$BOTDIR/karma"
+else
+	karma=`grep -e "^$karmee:" "$BOTDIR/karma" | cut -d: -f2`
+	echo $[karma$updown] > /dev/null
+	sed -i "s/^$karmee:.*/$karmee:$karma/" "$BOTDIR/karma"
+fi
+
+action "$channel" "nods"

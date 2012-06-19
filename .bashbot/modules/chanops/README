@@ -1,0 +1,4 @@
+Join or a leave a channel. Or Kick someone.
+bashbot: join #channel
+bashbot: leave[ #channel]
+bashbot: kick person

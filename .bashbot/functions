@@ -1,0 +1,106 @@
+function say () {
+	channel=$1
+	message=$2
+	echo "privmsg $channel :$message" >> $PIPE
+}
+
+function action () {
+	channel=$1
+	action=$2
+	echo -e "privmsg $channel :\\01ACTION $action\\01" >> $PIPE
+}
+
+function reply () {
+	nick=$1
+	channel=$2
+	message=$3
+	say "$channel" "$nick: $message"
+}
+
+function factoid() {
+	channel=$1
+	item=$2
+	factoids=`wc -l "$BOTDIR/factoids/$item" | cut -d' ' -f1`
+	factoidn=$[$RANDOM%$factoids + 1]
+	factoid=`sed -n ${factoidn}p "$BOTDIR/factoids/$item"`
+	if echo -n "$factoid" | grep -q "^<action>"; then
+		factoid=`echo -n "$factoid" | cut -d\> -f2`
+		action "$channel" "$factoid"
+	elif echo -n "$factoid" | grep -q "^<reply>"; then
+		factoid=`echo -n "$factoid" | cut -d\> -f2`
+		say "$channel" "$factoid"
+	else
+		say "$channel" "$item is $factoid"
+	fi
+}
+
+function respond () {
+	nick=$1
+	channel=$2
+	message=$3
+	command=`echo -n "$message" | cut -d' ' -f1`
+
+	# Check for micheviousness
+	if echo "$command" | grep -q '[./]'; then
+		return
+	fi
+
+	if echo "$message" | grep -q "\.\./"; then
+		return
+	fi
+
+	# Is it a command?
+	if [ -e "$BOTDIR/commands/$command" ]; then
+		. "$BOTDIR/commands/$command"
+		return
+	fi
+
+	# Is it a factoid?
+	if [ -f "$BOTDIR/factoids/$message" ]; then
+		factoid "$channel" "$message"
+		return
+	fi
+
+	# Is it a regex?
+	ls "$BOTDIR/regexes" | sort | grep -v '*.disabled' | while read regex; do
+		if echo "$message" | egrep -q -e "`head -n1 "$BOTDIR/regexes/$regex" | cut -d' ' -f2-`"; then
+			. "$BOTDIR/regexes/$regex"
+			return
+		fi
+	done
+}
+
+function examine () {
+	timestamp=`date '+%a %d %b %Y %T'`
+	nick=$1
+	channel=$2
+	message=$3
+	
+	# Something I said?
+	if [ "$nick" != "$BOTNAME" ]; then
+		# Check for messages
+		if [ -f "$BOTDIR/messages/$nick" ]; then
+			cat "$BOTDIR/messages/$nick" | while read sm; do
+				snick=`echo -n $sm | cut -d: -f1`
+				smsg=`echo -n $sm | cut -d: -f2-`
+			  reply "$nick" "$channel" "$snick asked me to tell you '$smsg'"
+			done
+			rm "$BOTDIR/messages/$nick"
+		fi
+	
+		# Check if someone's speaking to me
+			if echo -n "$message" | egrep -q -e '^('"$BOTNAME"'|bot|bashbot)[,:] '; then
+			cmessage=`echo -n "$message" | cut -d' ' -f2-`
+			respond "$nick" "$channel" "$cmessage"
+		fi
+	
+		# Private message?
+		if [ "$channel" = "$BOTNAME" ]; then
+			respond "$nick" "$nick" "$message"
+		fi
+	
+	fi
+
+	# Log
+	echo "$timestamp $channel <$nick> $message" >> $IRCLOG
+}

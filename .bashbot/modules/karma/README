@@ -1,0 +1,3 @@
+Raise or lower karmas, or read them:
+bashbot: SOMETHING(++|--) [optional comment]
+bashbot: karma SOMETHING

@@ -1,0 +1,19 @@
+# ^(.*) is( also)? (.*)$
+m=`echo -n "$message" | sed 's/^\(.*\) is\( also\)* \(.*\)$/\1:\2:\3/'`
+item=`echo -n "$m" | cut -d: -f1`
+also=`echo -n "$m" | cut -d: -f2 | cut -d' ' -f2-`
+factoid=`echo -n "$m" | cut -d: -f3-`
+
+if [ -f "$BOTDIR/commands/$item" ]; then
+	action "$channel" "refuses to store that factoid. It would be masked by a command"
+elif [ -f "$BOTDIR/factoids/$item" ]; then
+	if [ -z $also ]; then
+		action "$channel" "already knows what $item is"
+	else
+		echo "$factoid" >> "$BOTDIR/factoids/$item"
+		say "$channel" "Rightio."
+	fi
+else
+	echo "$factoid" > "$BOTDIR/factoids/$item"
+	say "$channel" "Rightio."
+fi

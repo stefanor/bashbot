@@ -1,0 +1,11 @@
+# ^.* ~= s/.*/.*/[gi]?$
+m=`echo -n "$message" | sed 's#^\(.*\) ~= \(s/.*/.*/[gi]*\)$#\1:\2#'`
+item=`echo -n "$m" | cut -d: -f1`
+regex=`echo -n "$m" | cut -d: -f2`
+
+if [ -f "$BOTDIR/factoids/$item" ]; then
+	sed -i "$regex" "$BOTDIR/factoids/$item"
+	say "$channel" "Rightio."
+else
+	action "$channel" "can't edit factoids that don't exist, you silly noonoo."
+fi

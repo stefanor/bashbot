@@ -1,0 +1,6 @@
+# ^.*$
+complaint[0]="You speak funny - I can't understand a word you say."
+complaint[1]="I can't follow you. Speak english!"
+complaint[2]="Sorry?"
+r=$[`date +%s`%3]
+reply "$nick" "$channel" "${complaint[$r]}"
